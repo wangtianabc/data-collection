@@ -1,0 +1,32 @@
+spring:
+  datasource:
+    type: com.alibaba.druid.pool.DruidDataSource
+    driver-class-name: com.mysql.jdbc.Driver
+    url: jdbc:mysql://192.168.112.128:3306/handle-dev?useUnicode=true&characterEncoding=UTF-8
+    username: root
+    password: lanplex
+    initialSize: 5
+    minIdle: 5
+    maxActive: 20
+    maxWait: 60000
+    timeBetweenEvictionRunsMillis: 60000
+    minEvictableIdleTimeMillis: 300000
+    validationQuery: SELECT 1 FROM DUAL
+    testWhileIdle: true
+    testOnBorrow: false
+    testOnReturn: false
+    filters: stat
+    logSlowSql: true
+  jpa:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL5InnoDBDialect #org.hibernate.dialect.DmDialect
+        hbm2ddl:
+          auto: update
+    show-sql: true
+    open-in-view: false
+  devtools:
+    restart:
+      enabled: true
+#logging:
+#  file: my.log
