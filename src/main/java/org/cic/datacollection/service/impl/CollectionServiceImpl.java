@@ -50,7 +50,6 @@ public class CollectionServiceImpl implements CollectionService {
             logger.error("采集异常:"+e.getMessage());
             return  ResultHelper.getSuccess(collectionDataList);
         }
-//        executorService.shutdown();
         return ResultHelper.getSuccess(collectionDataList);
     }
 
@@ -61,9 +60,7 @@ public class CollectionServiceImpl implements CollectionService {
      */
     private List<Site> getSubSiteList() {
         List<Handles> handles = handleRepository.findByIdx(200L);
-//        Map<String, Object> map = new HashMap<>();
         List<Site> siteList = new ArrayList<>();
-//        if (handles != null && handles.size() > 0) {
         for (Handles handle : handles) {
             byte[] data = UtilFunc.getBytes(handle.getData());
             SiteInfo siteinfo = new SiteInfo();
@@ -91,10 +88,7 @@ public class CollectionServiceImpl implements CollectionService {
             site.setDesc(Util.decodeString(siteinfo.getAttribute(Util.encodeString("desc"))));
             siteList.add(site);
         }
-//        } else {
-//            map.put("result", "no sub site");
-//        }
-//        map.put("result", siteList);
+
         return siteList;
     }
 
