@@ -87,7 +87,13 @@ public class UtilFunc {
                                             map.put("index", Long.parseLong(valueObj.get("index").getAsString()));
                                             map.put("type", valueObj.get("type").getAsString());
                                             if (valueObj.get("data") instanceof JsonObject) {
-                                                map.put("data", valueObj.get("data").getAsJsonObject().get("value").getAsString());
+                                                if (valueObj.get("data").getAsJsonObject().get("format").getAsString().equals("string")) {
+                                                    try {
+                                                        map.put("data", valueObj.get("data").getAsJsonObject().get("value").getAsString());
+                                                    } catch (Exception e) {
+                                                        System.out.println("json parse error:" + e.getMessage());
+                                                    }
+                                                }
                                             }
                                             record.getValues().add(map);
                                         }
