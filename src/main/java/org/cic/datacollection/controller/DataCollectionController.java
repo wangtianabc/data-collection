@@ -34,6 +34,12 @@ public class DataCollectionController extends BaseController {
         };
     }
 
+    @GetMapping("/getCollectionDataByMetaHandle/{prefix}/{suffix}")
+    public Callable<ResultInfo> getCollectionDataByMeta(@PathVariable("prefix") String prefix,@PathVariable("suffix") String suffix){
+        return ()->{
+            return collectionService.collectDataByMeta(prefix+"/"+suffix);
+        };
+    }
 
     /*
     @ApiOperation(value="测试", notes="测试", hidden = true)

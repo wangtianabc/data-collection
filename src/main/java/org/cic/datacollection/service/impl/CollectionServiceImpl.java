@@ -6,7 +6,9 @@ import net.handle.hdllib.Encoder;
 import net.handle.hdllib.Interface;
 import net.handle.hdllib.SiteInfo;
 import net.handle.hdllib.Util;
+import org.apache.commons.lang3.StringUtils;
 import org.cic.datacollection.model.CollectionData;
+import org.cic.datacollection.model.HandleModel;
 import org.cic.datacollection.model.Handles;
 import org.cic.datacollection.model.Site;
 import org.cic.datacollection.repository.HandleRepository;
@@ -40,11 +42,29 @@ public class CollectionServiceImpl implements CollectionService {
     @Override
     public ResultInfo collectData() {
         List<Site> siteList = getSubSiteList();
-        List<CollectionData> collectionDataList = Collections.synchronizedList(new ArrayList<>());
+        List<HandleModel> collectionDataList = Collections.synchronizedList(new ArrayList<>());
 
         final CountDownLatch latch = new CountDownLatch(siteList.size());
         siteList.forEach((site) -> {
-            CollectExcute collectExcute = new CollectExcute(site,latch, collectionDataList);
+            CollectExcute collectExcute = new CollectExcute(site,latch, collectionDataList,false,null);
+            executorService.execute(collectExcute);
+        });
+        try {
+            latch.await();
+        } catch (InterruptedException e) {
+            logger.error("采集异常:"+e.getMessage());
+            return  ResultHelper.getSuccess(collectionDataList);
+        }
+        return ResultHelper.getSuccess(collectionDataList);
+    }
+
+    @Override
+    public ResultInfo collectDataByMeta(String metaHandleCode) {
+        List<Site> siteList = getSubSiteList();
+        List<HandleModel> collectionDataList = Collections.synchronizedList(new ArrayList<>());
+        final CountDownLatch latch = new CountDownLatch(siteList.size());
+        siteList.forEach((site) -> {
+            CollectExcute collectExcute = new CollectExcute(site,latch, collectionDataList,true,metaHandleCode);
             executorService.execute(collectExcute);
         });
         try {
@@ -99,10 +119,14 @@ public class CollectionServiceImpl implements CollectionService {
 
         private final CountDownLatch latch;
         private final Site site;
-        private final List<CollectionData> collectionDataList;
+        private final List<HandleModel> collectionDataList;
+        private final boolean byMeta;
+        private final String metahandle;
 
-        public CollectExcute(Site site, CountDownLatch latch, List<CollectionData> collectionDataList) {
+        public CollectExcute(Site site, CountDownLatch latch, List<HandleModel> collectionDataList,boolean byMeta,String metahandle) {
             this.site = site;
+            this.metahandle = metahandle;
+            this.byMeta = byMeta;
             this.latch = latch;
             this.collectionDataList = collectionDataList;
         }
@@ -112,8 +136,8 @@ public class CollectionServiceImpl implements CollectionService {
             synchronized (this) {
                 try {
                     String host = "http://" + this.site.getIpAddress() + ":" + this.site.getPort();
-                    String path = "/data-api/handles";
-                    Map<String, String> headers = new HashMap<String, String>();
+                    String path = (byMeta && StringUtils.isNotEmpty(this.metahandle))?"/data-api/refhandle/"+this.metahandle:"/data-api/handles";
+                    Map<String, String> headers = new HashMap<>();
                     headers.put("Content-Type", "application/json");
                     ResultInfo resultInfo = RestJsonApi.doGet(host, path, headers, null, ResultInfo.class);
                     if (resultInfo.isOK()) {
@@ -121,13 +145,9 @@ public class CollectionServiceImpl implements CollectionService {
                         while(result instanceof ResultInfo ){
                             result = ((ResultInfo) result).getObj();
                         }
-
-                        logger.info("--------------采集开始-----------" +
-                                "本次采集数据如下: \r\t" + "采集地址: "+host+"\r\n 接口路径: "+path +"\r\n" +
-                                " 采集结果"+objectMapper.writeValueAsString(result) +"\r\n" +
-                                " --------------采集结束-----------");
-
-                        this.collectionDataList.addAll((List<CollectionData>)result);
+                        if(null != result){
+                            this.collectionDataList.addAll((List<HandleModel>)result);
+                        }
                     }
                 } catch (Exception e) {
                     logger.error("采集异常:"+e.getMessage());
