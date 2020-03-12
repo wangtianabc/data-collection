@@ -29,5 +29,10 @@ spring:
   devtools:
     restart:
       enabled: true
+  http:
+    encoding:
+      enabled: true
+      charset: UTF-8
+      force: true
 #logging:
 #  file: my.log

@@ -56,7 +56,7 @@ public class RestJsonApi {
                     }
                 }
             }
-            String result = new String(responseBytes);
+            String result = new String(responseBytes, "utf-8");
             if (responseCode == 200) {
                 if (null == transToObjClass) {
                     return ResultHelper.getSuccess(result);
