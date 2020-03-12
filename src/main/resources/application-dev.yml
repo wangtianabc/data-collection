@@ -2,7 +2,8 @@ spring:
   datasource:
     type: com.alibaba.druid.pool.DruidDataSource
     driver-class-name: com.mysql.jdbc.Driver
-    url: jdbc:mysql://192.168.112.128:3306/handle-dev?useUnicode=true&characterEncoding=UTF-8
+#    url: jdbc:mysql://192.168.112.128:3306/handle-dev?useUnicode=true&characterEncoding=UTF-8
+    url: jdbc:mysql://106.54.16.157:3306/handle-86-cic-1000?useUnicode=true&characterEncoding=UTF-8
     username: root
     password: lanplex
     initialSize: 5
