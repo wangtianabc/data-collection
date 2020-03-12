@@ -1,5 +1,6 @@
 package org.cic.datacollection.service.impl;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import net.handle.apps.simple.SiteInfoConverter;
 import net.handle.hdllib.Encoder;
 import net.handle.hdllib.Interface;
@@ -27,8 +28,11 @@ import java.util.concurrent.Executors;
 @Service
 public class CollectionServiceImpl implements CollectionService {
 
-    Logger logger = LoggerFactory.getLogger(CollectionServiceImpl.class);
+    private Logger logger = LoggerFactory.getLogger(CollectionServiceImpl.class);
     private final ExecutorService executorService = Executors.newFixedThreadPool(50);
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @Autowired
     private HandleRepository handleRepository;
@@ -42,7 +46,6 @@ public class CollectionServiceImpl implements CollectionService {
         siteList.forEach((site) -> {
             CollectExcute collectExcute = new CollectExcute(site,latch, collectionDataList);
             executorService.execute(collectExcute);
-            new Thread(collectExcute).start();
         });
         try {
             latch.await();
@@ -50,7 +53,6 @@ public class CollectionServiceImpl implements CollectionService {
             logger.error("采集异常:"+e.getMessage());
             return  ResultHelper.getSuccess(collectionDataList);
         }
-//        executorService.shutdown();
         return ResultHelper.getSuccess(collectionDataList);
     }
 
@@ -124,6 +126,12 @@ public class CollectionServiceImpl implements CollectionService {
                         while(result instanceof ResultInfo ){
                             result = ((ResultInfo) result).getObj();
                         }
+
+                        logger.info("--------------采集开始-----------" +
+                                "本次采集数据如下: \r\t" + "采集地址: "+host+"\r\n 接口路径: "+path +"\r\n" +
+                                " 采集结果"+objectMapper.writeValueAsString(result) +"\r\n" +
+                                " --------------采集结束-----------");
+
                         this.collectionDataList.addAll((List<CollectionData>)result);
                     }
                 } catch (Exception e) {
