@@ -14,6 +14,8 @@ import org.cic.datacollection.util.RestJsonApi;
 import org.cic.datacollection.util.UtilFunc;
 import org.cic.datacollection.vo.ResultHelper;
 import org.cic.datacollection.vo.ResultInfo;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -25,6 +27,9 @@ import java.util.concurrent.Executors;
 @Service
 public class CollectionServiceImpl implements CollectionService {
 
+    Logger logger = LoggerFactory.getLogger(CollectionServiceImpl.class);
+    private final ExecutorService executorService = Executors.newFixedThreadPool(50);
+
     @Autowired
     private HandleRepository handleRepository;
 
@@ -32,18 +37,20 @@ public class CollectionServiceImpl implements CollectionService {
     public ResultInfo collectData() {
         List<Site> siteList = getSubSiteList();
         List<CollectionData> collectionDataList = Collections.synchronizedList(new ArrayList<>());
-        ExecutorService executorService = Executors.newFixedThreadPool(50);
-        final CountDownLatch latch = new CountDownLatch(50);
+
+        final CountDownLatch latch = new CountDownLatch(siteList.size());
         siteList.forEach((site) -> {
             CollectExcute collectExcute = new CollectExcute(site,latch, collectionDataList);
             executorService.execute(collectExcute);
-            executorService.shutdown();
+            new Thread(collectExcute).start();
         });
         try {
             latch.await();
         } catch (InterruptedException e) {
+            logger.error("采集异常:"+e.getMessage());
             return  ResultHelper.getSuccess(collectionDataList);
         }
+//        executorService.shutdown();
         return ResultHelper.getSuccess(collectionDataList);
     }
 
@@ -113,9 +120,14 @@ public class CollectionServiceImpl implements CollectionService {
                     headers.put("Content-Type", "application/json");
                     ResultInfo resultInfo = RestJsonApi.doGet(host, path, headers, null, ResultInfo.class);
                     if (resultInfo.isOK()) {
-                        this.collectionDataList.add((CollectionData) resultInfo.getObj());
+                        Object result = resultInfo.getObj();
+                        while(result instanceof ResultInfo ){
+                            result = ((ResultInfo) result).getObj();
+                        }
+                        this.collectionDataList.addAll((List<CollectionData>)result);
                     }
                 } catch (Exception e) {
+                    logger.error("采集异常:"+e.getMessage());
                     this.collectionDataList.add(null);
                 } finally {
                     this.latch.countDown();
