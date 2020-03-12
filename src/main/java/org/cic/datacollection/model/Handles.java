@@ -6,7 +6,7 @@ import java.sql.Blob;
 import javax.persistence.*;
 
 @Entity
-@Table(name="handles", schema="handle-dev")
+@Table(name="handles")
 @IdClass(HandlesPk.class)
 public class Handles implements Serializable {
     @Id

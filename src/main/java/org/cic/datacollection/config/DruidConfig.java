@@ -132,7 +132,7 @@ public class DruidConfig  implements ApplicationContextAware {
             datasource.setUrl(conStr);
             datasource.setUsername(conUsername);
             datasource.setPassword(conPassword);
-            log.info("success connect mysql:" + conStr);
+            //log.info("success connect mysql:" + conStr);
         }
         datasource.setDriverClassName(driverClassName);
         datasource.setInitialSize(initialSize);

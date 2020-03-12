@@ -8,7 +8,7 @@ import java.io.Serializable;
 import java.sql.Timestamp;
 
 @Entity
-@Table(name="handle_collection", schema="handle-dev")
+@Table(name="handle_collection")
 public class HandleCollection implements Serializable {
     @Id
     private Long id;
