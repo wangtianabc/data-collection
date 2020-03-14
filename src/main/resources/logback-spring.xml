@@ -6,6 +6,11 @@
         <encoder>
             <pattern>%d{HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>INFO</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
     </appender>
     <!--按天生成日志-->
     <appender name="logFile"  class="ch.qos.logback.core.rolling.RollingFileAppender">
@@ -24,7 +29,7 @@
         </layout>
     </appender>
 
-    <root level="INFO,ERROR">
+    <root level="INFO">
         <appender-ref ref="console" />
         <appender-ref ref="logFile" />
     </root>
