@@ -10,7 +10,7 @@ import java.util.List;
 public interface HandleCollectionRepository extends JpaRepository<HandleCollection, Integer> {
     List<HandleCollection> findAll();
 
-    @Query(nativeQuery=true, value = "select * from Handle_collection h order by h.operate_time desc limit 100")
+    @Query(nativeQuery=true, value = "select * from handle_collection h order by h.operate_time desc limit 100")
     List<HandleCollection> findPartHandleCollections();
 
     @Query("from HandleCollection h where h.refHandle=:refHandle")

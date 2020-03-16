@@ -1,42 +1,36 @@
 package org.cic.datacollection;
 
+import net.handle.hdllib.Interface;
+import net.handle.server.HandleServer;
 import org.cic.datacollection.config.DruidConfig;
 import org.springframework.web.context.WebApplicationContext;
 
-import java.net.Inet4Address;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-
 public class BaseController{
-    public Object handleServer = null;
-    private String port = "8020";
+    private static Object handleServer = null;
 
-    public Object getHandleServer () {
-        if (((WebApplicationContext) DruidConfig.getCtx()).getServletContext().getAttribute("net.handle.server.HandleServerExtend") != null) {
-            handleServer = ((WebApplicationContext) DruidConfig.getCtx()).getServletContext().getAttribute("net.handle.server.HandleServerExtend");
+    public static Object getHandleServer () {
+        if (BaseController.handleServer == null && ((WebApplicationContext) DruidConfig.getCtx()).getServletContext().getAttribute("net.handle.server.HandleServer") != null) {
+            BaseController.handleServer = ((WebApplicationContext) DruidConfig.getCtx()).getServletContext().getAttribute("net.handle.server.HandleServer");
         }
-        return handleServer;
+        return BaseController.handleServer;
     }
 
-    public Object getPort(){
-        if (((WebApplicationContext) DruidConfig.getCtx()).getServletContext().getAttribute("port") != null) {
-            port = ((WebApplicationContext) DruidConfig.getCtx()).getServletContext().getAttribute("port").toString();
+    public int getPort(){
+        int port = 8000;
+        try {
+            Interface[] interfaces = ((HandleServer)BaseController.getHandleServer()).getSiteInfo().servers[0].interfaces;
+            for (int i = 0; i < interfaces.length; i ++) {
+                if (interfaces[i].protocol == Interface.SP_HDL_HTTP || interfaces[i].protocol == Interface.SP_HDL_HTTPS) {
+                    port = interfaces[i].port;
+                }
+            }
+        } catch (Exception e) {
+
         }
         return port;
     }
 
     public String getIp(){
-        InetAddress localHost = null;
-        try {
-            localHost = Inet4Address.getLocalHost();
-        } catch (UnknownHostException e) {
-
-        }
-        if (localHost != null) {
-            return localHost.getHostAddress();
-        } else {
-            return "";
-        }
-
+        return ((HandleServer)BaseController.getHandleServer()).getSiteInfo().servers[0].getAddressString();
     }
 }

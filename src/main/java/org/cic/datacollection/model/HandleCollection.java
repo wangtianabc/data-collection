@@ -1,9 +1,6 @@
 package org.cic.datacollection.model;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.Table;
+import javax.persistence.*;
 import java.io.Serializable;
 import java.sql.Timestamp;
 
@@ -11,6 +8,7 @@ import java.sql.Timestamp;
 @Table(name="handle_collection")
 public class HandleCollection implements Serializable {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     @Column
     private String handle;
@@ -21,6 +19,7 @@ public class HandleCollection implements Serializable {
     @Column
     private String refHandle;
 
+    @Id
     public Long getId() {
         return id;
     }

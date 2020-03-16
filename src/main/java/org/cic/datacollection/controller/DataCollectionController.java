@@ -1,6 +1,8 @@
 package org.cic.datacollection.controller;
 
 import io.swagger.annotations.ApiOperation;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.http.client.methods.HttpGet;
 import org.cic.datacollection.BaseController;
 import org.cic.datacollection.model.*;
@@ -41,7 +43,7 @@ public class DataCollectionController extends BaseController {
         };
     }
 
-    /*
+
     @ApiOperation(value="测试", notes="测试", hidden = true)
     @RequestMapping(value = "/hello", method = RequestMethod.GET)
     public String index() {
@@ -49,9 +51,9 @@ public class DataCollectionController extends BaseController {
         if (this.getHandleServer() == null) {
             return "server is null" + "url:" + this.getIp() + ":" + this.getPort();
         } else {
-            return "hello:" + this.getHandleServer().getClass().getName() + "url:" + this.getIp() + ":" + this.getPort();
+            return "hello:" + this.getIp() + ":" + this.getPort();
         }
-    }*/
+    }
 
     @ApiOperation(value="获取handle信息", notes="循环调用handle查询接口，获取handle具体内容")
     @GetMapping(value = "/handles")
@@ -73,12 +75,14 @@ public class DataCollectionController extends BaseController {
         };
     }
 
+    //private static final Log log = LogFactory.getLog(DataCollectionController.class);
     private ResultInfo  getHandleRecordList(List<HandleCollection> handleCollections){
         if (handleCollections != null && handleCollections.size() > 0) {
             HttpGet[] requests = new HttpGet[handleCollections.size()];
             List<HandleModel> handleRecordList = new ArrayList<>();
             for (int i = 0; i < handleCollections.size(); i ++) {
                 requests[i] = new HttpGet("http://" + this.getIp() + ":" + this.getPort() + "/api/handles/" + handleCollections.get(i).getHandle() + "?enhance=1");
+                //log.info("http://" + this.getIp() + ":" + this.getPort() + "/api/handles/" + handleCollections.get(i).getHandle() + "?enhance=1");
                 requests[i].setHeader("opt", handleCollections.get(i).getOperate());
             }
             try {
