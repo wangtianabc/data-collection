@@ -7,12 +7,20 @@ import org.springframework.web.context.WebApplicationContext;
 
 public class BaseController{
     private static Object handleServer = null;
+    private static Object handleResolver = null;
 
     public static Object getHandleServer () {
         if (BaseController.handleServer == null && ((WebApplicationContext) DruidConfig.getCtx()).getServletContext().getAttribute("net.handle.server.HandleServer") != null) {
             BaseController.handleServer = ((WebApplicationContext) DruidConfig.getCtx()).getServletContext().getAttribute("net.handle.server.HandleServer");
         }
         return BaseController.handleServer;
+    }
+
+    public static Object getHandleResolver () {
+        if (BaseController.handleResolver == null && ((WebApplicationContext) DruidConfig.getCtx()).getServletContext().getAttribute("net.handle.hdllib.HandleResolver") != null) {
+            BaseController.handleResolver = ((WebApplicationContext) DruidConfig.getCtx()).getServletContext().getAttribute("net.handle.hdllib.HandleResolver");
+        }
+        return BaseController.handleResolver;
     }
 
     public int getPort(){

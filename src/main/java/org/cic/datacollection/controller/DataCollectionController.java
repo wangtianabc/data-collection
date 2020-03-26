@@ -1,20 +1,22 @@
 package org.cic.datacollection.controller;
 
 import io.swagger.annotations.ApiOperation;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import net.handle.hdllib.*;
 import org.apache.http.client.methods.HttpGet;
 import org.cic.datacollection.BaseController;
+import org.cic.datacollection.event.DeleteEvent;
+import org.cic.datacollection.event.DeletePublisher;
 import org.cic.datacollection.model.*;
 import org.cic.datacollection.repository.HandleCollectionRepository;
 import org.cic.datacollection.service.CollectionService;
 import org.cic.datacollection.util.UtilFunc;
 import org.cic.datacollection.vo.ResultHelper;
 import org.cic.datacollection.vo.ResultInfo;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -22,6 +24,7 @@ import java.util.concurrent.Callable;
 @RestController
 public class DataCollectionController extends BaseController {
 
+    private Logger logger = LoggerFactory.getLogger(DataCollectionController.class);
     @Autowired
     private HandleCollectionRepository handleCollectionRepository;
 
@@ -29,18 +32,17 @@ public class DataCollectionController extends BaseController {
     @Autowired
     private CollectionService collectionService;
 
-    @GetMapping("/getCollectionData")
-    public Callable<ResultInfo> getCollectionData(){
-        return ()->{
-            return collectionService.collectData();
-        };
+    @Autowired
+    private DeletePublisher publisher;
+
+    @GetMapping("/getCollectionData/{handle_prefix}/{handle_suffix}/{password}")
+    public Callable<ResultInfo> getCollectionData(@PathVariable("handle_prefix") String handle_prefix, @PathVariable("handle_suffix") String handle_suffix, @PathVariable("password") String password){
+        return ()-> collectionService.collectData(handle_prefix, handle_suffix, password);
     }
 
-    @GetMapping("/getCollectionDataByMetaHandle/{prefix}/{suffix}")
-    public Callable<ResultInfo> getCollectionDataByMeta(@PathVariable("prefix") String prefix,@PathVariable("suffix") String suffix){
-        return ()->{
-            return collectionService.collectDataByMeta(prefix+"/"+suffix);
-        };
+    @GetMapping("/getCollectionDataByMetaHandle/{handle_prefix}/{handle_suffix}/{password}/{prefix}/{suffix}")
+    public Callable<ResultInfo> getCollectionDataByMeta(@PathVariable("handle_prefix") String handle_prefix, @PathVariable("handle_suffix") String handle_suffix, @PathVariable("password") String password, @PathVariable("prefix") String prefix,@PathVariable("suffix") String suffix){
+        return ()-> collectionService.collectDataByMeta(handle_prefix, handle_suffix, password, prefix+"/"+suffix);
     }
 
 
@@ -56,33 +58,48 @@ public class DataCollectionController extends BaseController {
     }
 
     @ApiOperation(value="获取handle信息", notes="循环调用handle查询接口，获取handle具体内容")
-    @GetMapping(value = "/handles")
-    public Callable<ResultInfo> getHandlesData() {
-        return ()->{
-            List<HandleCollection> handleCollections = handleCollectionRepository.findPartHandleCollections();
-            return getHandleRecordList(handleCollections);
-        };
+    @GetMapping(value = "/handles/{handle_prefix}/{handle_suffix}/{password}")
+    public Callable<ResultInfo> getHandlesData(@PathVariable("handle_prefix") String handle_prefix, @PathVariable("handle_suffix") String handle_suffix, @PathVariable("password") String password) {
+        ResultInfo authResult = collectionService.checkAuth(handle_prefix, handle_suffix, password);
+        if (authResult.isOK()) {
+            return ()->{
+                List<HandleCollection> handleCollections = handleCollectionRepository.findPartHandleCollections();
+                ResultInfo resultInfo = collectionService.getHandleRecordList(handleCollections, (AuthenticationInfo)authResult.getObj());
+                publisher.publish(new DeleteEvent("delete", handleCollections));
+                return resultInfo;
+            };
+
+        } else {
+            return () -> authResult;
+        }
     }
 
     @ApiOperation(value="获取handle信息", notes="根据元数据handle，获取handle具体内容")
-    @GetMapping(value = "/refhandle/{prefix}/**")
-    public Callable<ResultInfo> getCollectionByRefHandle(@PathVariable String prefix, HttpServletRequest request) {
-        return ()->{
-            String suffix = UtilFunc.extractPathFromPattern(request);
-            String refHandle = prefix + "/" + suffix;
-            List<HandleCollection> handleCollections = handleCollectionRepository.findHandleCollectionByRefHandle(refHandle);
-            return getHandleRecordList(handleCollections);
-        };
+    @GetMapping(value = "/refhandle/{handle_prefix}/{handle_suffix}/{password}/{prefix}/{suffix}")
+    public Callable<ResultInfo> getCollectionByRefHandle(@PathVariable("handle_prefix") String handle_prefix, @PathVariable("handle_suffix") String handle_suffix, @PathVariable("password") String password, @PathVariable("prefix") String prefix, @PathVariable("suffix") String suffix) {
+        ResultInfo authResult = collectionService.checkAuth(handle_prefix, handle_suffix, password);
+        if (authResult.isOK()) {
+            return () -> {
+                //String suffix = UtilFunc.extractPathFromPattern(request);
+                String refHandle = prefix + "/" + suffix;
+                List<HandleCollection> handleCollections = handleCollectionRepository.findHandleCollectionByRefHandle(refHandle);
+                ResultInfo resultInfo = collectionService.getHandleRecordList(handleCollections, (AuthenticationInfo)authResult.getObj());
+                publisher.publish(new DeleteEvent("delete", handleCollections));
+                return resultInfo;
+            };
+        } else {
+            return () -> authResult;
+        }
     }
 
-    //private static final Log log = LogFactory.getLog(DataCollectionController.class);
-    private ResultInfo  getHandleRecordList(List<HandleCollection> handleCollections){
+
+
+    private ResultInfo getHandleRecordList(List<HandleCollection> handleCollections) {
         if (handleCollections != null && handleCollections.size() > 0) {
             HttpGet[] requests = new HttpGet[handleCollections.size()];
             List<HandleModel> handleRecordList = new ArrayList<>();
             for (int i = 0; i < handleCollections.size(); i ++) {
                 requests[i] = new HttpGet("http://" + this.getIp() + ":" + this.getPort() + "/api/handles/" + handleCollections.get(i).getHandle() + "?enhance=1");
-                //log.info("http://" + this.getIp() + ":" + this.getPort() + "/api/handles/" + handleCollections.get(i).getHandle() + "?enhance=1");
                 requests[i].setHeader("opt", handleCollections.get(i).getOperate());
             }
             try {
@@ -95,5 +112,4 @@ public class DataCollectionController extends BaseController {
             return ResultHelper.requestFaild("nothing");
         }
     }
-
 }
