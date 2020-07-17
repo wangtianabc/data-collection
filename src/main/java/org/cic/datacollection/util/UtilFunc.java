@@ -109,14 +109,14 @@ public class UtilFunc {
                     @Override
                     public void failed(final Exception ex) {
                         latch.countDown();
-                        System.out.println(request.getRequestLine() + "->" + ex);
+                        //System.out.println(request.getRequestLine() + "->" + ex);
                         //logError(ServerLog.ERRLOG_LEVEL_INFO, request.getRequestLine() + "->" + ex);
                     }
 
                     @Override
                     public void cancelled() {
                         latch.countDown();
-                        System.out.println(request.getRequestLine() + " cancelled");
+                        //System.out.println(request.getRequestLine() + " cancelled");
                         //logError(ServerLog.ERRLOG_LEVEL_INFO, request.getRequestLine() + " cancelled");
                     }
                 });
